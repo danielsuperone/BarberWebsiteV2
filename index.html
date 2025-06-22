@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Merchant Barber</title> 
+    <link rel="icon" type="image/png" href="https://i.imgur.com/KgYjZvD.png" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Custom CSS for calendar */
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+        .calendar-header {
+            font-weight: bold;
+            text-align: center;
+            padding: 8px;
+        }
+        .calendar-day {
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            background-color: #fff; /* White background for days */
+            border: 1px solid #e5e7eb; /* Light border */
+        }
+        .calendar-day:hover:not(.selected):not(.disabled) {
+            background-color: #f3f4f6; /* Light gray on hover */
+            transform: translateY(-2px);
+        }
+        .calendar-day.selected {
+            background-color: #fcd34d; /* Tailwind yellow-300 for selected */
+            color: #1f2937; /* Dark text for selected */
+            font-weight: bold;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Shadow for selected */
+        }
+        .calendar-day.disabled {
+            color: #d1d5db;
+            background-color: #f9fafb; /* Lighter background for disabled */
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        /* Animation for booking confirmation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .confirmation {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Custom scrollbar for services dropdown */
+        .services-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+        .services-dropdown::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .services-dropdown::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        /* Time slot button styles */
+        .time-slot-btn {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem; /* rounded-md */
+            padding-top: 0.5rem; /* py-2 */
+            padding-bottom: 0.5rem; /* py-2 */
+            padding-left: 0.75rem; /* px-3 */
+            padding-right: 0.75rem; /* px-3 */
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.25rem;
+            transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+
+        .time-slot-btn:hover:not(:disabled) {
+            background-color: #fffbeb; /* yellow-50 */
+            border-color: #fcd34d; /* yellow-300 */
+        }
+
+        .time-slot-btn.selected-time {
+            background-color: #fcd34d; /* yellow-300 */
+            color: #1f2937; /* text-gray-900 */
+            border-color: #fbbf24; /* yellow-400 */
+            font-weight: 600; /* font-semibold */
+        }
+
+        .time-slot-btn:disabled {
+            background-color: #e5e7eb; /* gray-200 */
+            color: #9ca3af; /* gray-400 */
+            cursor: not-allowed;
+            opacity: 0.7;
+            border-color: #d1d5db; /* gray-300 */
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+<nav class="bg-black text-white shadow-lg">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+    <div class="flex items-center space-x-2">
+        <a href="bookings.html" class="focus:outline-none">
+            <img src="https://i.imgur.com/KgYjZvD.png" alt="Logo" class="w-8 h-8 rounded-full hover:opacity-75 transition-opacity">
+        </a>
+        <span class="text-xl font-bold">The Merchant Barber</span>
+    </div>
+        <div class="hidden md:flex space-x-6">
+            <a href="#" class="hover:text-yellow-400 transition">Home</a>
+            <a href="#services" class="hover:text-yellow-400 transition">Services</a>
+            <a href="#barbers" class="hover:text-yellow-400 transition">Our Barbers</a>
+            <a href="#book" class="hover:text-yellow-400 transition">Book Now</a>
+            <a href="#contact" class="hover:text-yellow-400 transition">Contact</a>
+        </div>
+        <button class="md:hidden text-2xl" id="mobile-menu-button">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+</nav>
+
+<div class="md:hidden hidden bg-gray-900 px-4 py-2" id="mobile-menu">
+    <a href="#" class="block py-2 hover:text-yellow-400 transition">Home</a>
+    <a href="#services" class="block py-2 hover:text-yellow-400 transition">Services</a>
+    <a href="#barbers" class="block py-2 hover:text-yellow-400 transition">Our Barbers</a>
+    <a href="#book" class="block py-2 hover:text-yellow-400 transition">Book Now</a>
+    <a href="#contact" class="block py-2 hover:text-yellow-400 transition">Contact</a>
+</div>
+
+<header class="bg-gradient-to-r from-black to-gray-800 text-white py-20">
+    <div class="container mx-auto px-4 flex flex-col md:flex-row items-center">
+        <div class="md:w-1/2 mb-10 md:mb-0">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">High Quality Haircuts in Malta</h1>
+            <p class="text-lg mb-6">Established in 2020, one of the most sought after barbers located in the heart of Qawra, a small town in Saint Pauls bay that specialises in high quality male haircuts.</p>
+            <a href="#book" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-6 rounded-lg transition duration-300 inline-block">Book Your Appointment</a>
+        </div>
+        <div class="md:w-1/2 flex justify-center">
+            <img src="https://i.imgur.com/fkv8FAx.png" alt="Barber at work" class="rounded-lg shadow-2xl max-w-md w-full">
+        </div>
+    </div>
+</header>
+
+<section id="services" class="py-16 bg-white">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">Our Services</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                <div class="text-yellow-500 text-4xl mb-4">
+                    <i class="fas fa-cut"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Classic Haircut</h3>
+                <p class="text-gray-700 mb-4">A precision haircut with clippers and scissors.</p>
+                <p class="text-yellow-600 font-bold">$12</p>
+            </div>
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                <div class="text-yellow-500 text-4xl mb-4">
+                    <i class="fas fa-air-freshener"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Beard Trim</h3>
+                <p class="text-gray-700 mb-4">Professional beard shaping and trimming with hot towel treatment.</p>
+                <p class="text-yellow-600 font-bold">$15</p>
+            </div>
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                <div class="text-yellow-500 text-4xl mb-4">
+                    <i class="fas fa-spa"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Royal Treatment</h3>
+                <p class="text-gray-700 mb-4">Haircut, beard trim, hot towel shave, and relaxing scalp massage.</p>
+                <p class="text-yellow-600 font-bold">$25</p>
+            </div>
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                <div class="text-yellow-500 text-4xl mb-4">
+                    <i class="fas fa-child"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Kids Cut (under 12 yrs)</h3>
+                <p class="text-gray-700 mb-4">Specialized haircut for young gentlemen with a fun, comfortable experience.</p>
+                <p class="text-yellow-600 font-bold">$8</p>
+            </div>
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                <div class="text-yellow-500 text-4xl mb-4">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Hot Towel Shave</h3>
+                <p class="text-gray-700 mb-4">Traditional straight razor shave with hot towela and premium shaving products.</p>
+                <p class="text-yellow-600 font-bold">$20</p>
+            </div>
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                <div class="text-yellow-500 text-4xl mb-4">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Executive Package</h3>
+                <p class="text-gray-700 mb-4">Haircut, beard trim, facial massage, and shoe shine for the busy professional.</p>
+                <p class="text-yellow-600 font-bold">$45</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="barbers" class="py-16 bg-gray-100">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">Meet Our Barbers</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
+                <img src="https://i.imgur.com/vFEwBU6.png" alt="Barber Tony" class="w-full h-64 object-cover">
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-1">Tony</h3>
+                    <p class="text-yellow-600 mb-3">Master Barber</p>
+                    <p class="text-gray-700">With 15 years of experience, Tony is a jack of all trades when it comes to male haircuts and beard trimming.</p>
+                    <div class="mt-4 flex space-x-2">
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Fades</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Beards</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Hot Towels</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
+                <img src="https://i.imgur.com/kmEGlAf.png" alt="Barber John" class="w-full h-64 object-cover">
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-1">John</h3>
+                    <p class="text-yellow-600 mb-3">Senior Barber</p>
+                    <p class="text-gray-700">John brings modern techniques to traditional barbering for a fresh look.</p>
+                    <div class="mt-4 flex space-x-2">
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Modern Cuts</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Color</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Styling</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
+                <img src="https://i.imgur.com/gisffj5.png" alt="Barber Sarah" class="w-full h-64 object-cover">
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-1">Sarah</h3>
+                    <p class="text-yellow-600 mb-3">Master Barber</p>
+                    <p class="text-gray-700">Sarah is known for her precision clipper work and attention to detail.</p>
+                    <div class="mt-4 flex space-x-2">
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Skin Fades</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Line Ups</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Kids Cuts</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
+                <img src="https://i.imgur.com/1BeNXAC.png" alt="Mike" class="w-full h-64 object-cover">
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-1">Mike</h3>
+                    <p class="text-yellow-600 mb-3">Barber</p>
+                    <p class="text-gray-700">Mike specializes in traditional wet shaves and beard grooming.</p>
+                    <div class="mt-4 flex space-x-2">
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Shaves</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Beards</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded text-sm">Facials</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="book" class="py-16 bg-white">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">Book Your Appointment</h2>
+        <div class="max-w-3xl mx-auto bg-gray-100 p-8 rounded-lg shadow-xl">
+            <form id="booking-form" class="space-y-6">
+                <div>
+                    <label for="name" class="block text-gray-700 font-bold mb-2">Your Name:</label>
+                    <input type="text" id="name" name="name" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label for="email" class="block text-gray-700 font-bold mb-2">Your Email:</label>
+                    <input type="email" id="email" name="email" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label for="phone" class="block text-gray-700 font-bold mb-2">Phone Number:</label>
+                    <input type="tel" id="phone" name="phone"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="barber" class="block text-gray-700 font-bold mb-2">Select Barber:</label>
+                        <select id="barber" name="barber" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="">Choose a barber</option>
+                            <option value="Tony">Tony</option>
+                            <option value="John">John</option>
+                            <option value="Sarah">Sarah</option>
+                            <option value="Mike">Mike</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="service" class="block text-gray-700 font-bold mb-2">Select Service:</label>
+                        <select id="service" name="service" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="">Choose a service</option>
+                            <option value="classic_haircut">Classic Haircut ($12)</option>
+                            <option value="beard_trim">Beard Trim ($15)</option>
+                            <option value="royal_treatment">Royal Treatment ($25)</option>
+                            <option value="kids_cut">Kids Cut (under 12 yrs) ($8)</option>
+                            <option value="hot_towel_shave">Hot Towel Shave ($20)</option>
+                            <option value="executive_package">Executive Package ($45)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Select Date:</label>
+                    <div class="bg-white p-4 rounded-lg shadow-inner">
+                        <div class="flex justify-between items-center mb-4">
+                            <button type="button" id="prev-month" class="text-yellow-600 hover:text-yellow-800 text-xl"><i class="fas fa-chevron-left"></i></button>
+                            <span id="current-month" class="text-lg font-semibold"></span>
+                            <button type="button" id="next-month" class="text-yellow-600 hover:text-yellow-800 text-xl"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar text-gray-800">
+                            <div class="calendar-header">Sun</div>
+                            <div class="calendar-header">Mon</div>
+                            <div class="calendar-header">Tue</div>
+                            <div class="calendar-header">Wed</div>
+                            <div class="calendar-header">Thu</div>
+                            <div class="calendar-header">Fri</div>
+                            <div class="calendar-header">Sat</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Select Time Slot:</label>
+                    <div id="time-slots" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 mt-2">
+                        <p class="text-gray-500 col-span-full text-center">Please select a date to see available times.</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="requests" class="block text-gray-700 font-bold mb-2">Special Requests (optional):</label>
+                    <textarea id="requests" name="requests" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-6 rounded-lg transition duration-300">
+                    Book Appointment
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 confirmation">
+        <div class="text-center">
+            <div class="text-green-500 text-5xl mb-4">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-2">Booking Confirmed!</h3>
+            <p class="text-gray-700 mb-4" id="confirmation-details"></p>
+            <p class="text-gray-600 mb-6">We've sent the details to your email. See you soon!</p>
+            <button id="close-modal" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg transition duration-300">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<section id="contact" class="py-16 bg-gray-100">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">Visit Us</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <div class="bg-white p-6 rounded-lg shadow-md h-full">
+                    <h3 class="text-xl font-bold mb-4">Contact Information</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-map-marker-alt text-yellow-500 mt-1 mr-3"></i>
+                            <p>141 Il- Wileg, St Paul's Bay</p>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-phone-alt text-yellow-500 mr-3"></i>
+                            <p>+(356) 9942 6704</p>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-envelope text-yellow-500 mr-3"></i>
+                            <p>info@merchantbarber.com</p> </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-clock text-yellow-500 mr-3"></i>
+                            <div>
+                                <p class="font-semibold">Opening Hours:</p>
+                                <p>Tuesday - Saturday: 9am - 7:30pm</p>
+                                <p>Sunday - Monday: Closed</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <h4 class="font-bold mb-2">Follow Us</h4>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-700 hover:text-yellow-500 text-xl"><i class="fab fa-facebook"></i></a>
+                            <a href="https://www.instagram.com/themerchantbarber/" class="text-gray-700 hover:text-yellow-500 text-xl"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="text-gray-700 hover:text-yellow-500 text-xl"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="text-gray-700 hover:text-yellow-500 text-xl"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="bg-white p-6 rounded-lg shadow-md h-full">
+                   <h3 class="text-xl font-bold mb-4">Location</h3>
+                   <div class="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
+                       <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1575.4628286241838!2d14.41097274641617!3d35.94582962382101!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x130e57209e9f67a3%3A0x6b8d4f0d3b6f0e3e!2s141%20Il-Wile%C4%A1%2C%20St%20Paul's%20Bay%2C%20Malta!5e0!3m2!1sen!2smy!4v1718970923010!5m2!1sen!2smy" 
+                            width="100%" 
+                            height="100%" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy" 
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                   </div>
+                   <div class="mt-4">
+                       <h4 class="font-bold mb-2">Place</h4>
+                       <p class="text-gray-700">
+                           Supreme location in Qawra.
+                       </p>
+                   </div>
+               </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="bg-black text-white py-8">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-cut text-yellow-400 text-2xl"></i>
+                    <span class="text-xl font-bold">The Merchant Barber</span>
+                </div>
+                <p class="text-gray-400 mt-2">Precision haircuts for the modern gentleman since 2020.</p>
+            </div>
+            <div class="flex flex-col items-center md:items-end">
+                <p class="text-gray-400">© 2025 The Merchant Barber. All rights reserved.</p> <div class="mt-2 flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-white">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
+
+    // Your web app's Firebase configuration (already present in your HTML, copied here for clarity)
+    const firebaseConfig = {
+        apiKey: "AIzaSyA4NZz0oYsinOBZEdkA7VnhQSK6WUYlZ2M",
+        authDomain: "testportal-390ae.firebaseapp.com",
+        projectId: "testportal-390ae",
+        storageBucket: "testportal-390ae.firebasestorage.app",
+        messagingSenderId: "89461724442",
+        appId: "1:89461724442:web:0d0aa807b5ef52c64608a3",
+        measurementId: "G-C0GDD7V6Z9"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app); // Optional: for Google Analytics
+
+    // Initialize Firestore and make it globally accessible
+    const db = getFirestore(app);
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.getDocs = getDocs; // Added getDocs for fetching multiple documents
+    window.query = query;
+    window.orderBy = orderBy;
+</script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script>
+    // Mobile menu toggle
+    document.getElementById('mobile-menu-button').addEventListener('click', function() {
+        const menu = document.getElementById('mobile-menu');
+        menu.classList.toggle('hidden');
+    });
+
+    // Calendar functionality
+    let currentDate = new Date();
+    let selectedDate = null;
+    let selectedTime = null; // New variable to store selected time string
+
+    const openingHours = {
+        Tuesday: { start: 9 * 60, end: 19 * 60 + 30 }, // 9:00 AM to 7:30 PM (in minutes from midnight)
+        Wednesday: { start: 9 * 60, end: 19 * 60 + 30 },
+        Thursday: { start: 9 * 60, end: 19 * 60 + 30 },
+        Friday: { start: 9 * 60, end: 19 * 60 + 30 },
+        Saturday: { start: 9 * 60, end: 19 * 60 + 30 }
+    };
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    function renderCalendar() {
+        const calendar = document.querySelector('.calendar');
+        const currentMonthElement = document.getElementById('current-month');
+        
+        // Clear existing calendar days (except headers)
+        while (calendar.children.length > 7) { // 7 for the day headers
+            calendar.removeChild(calendar.lastChild);
+        }
+        
+        // Set month and year in header
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        currentMonthElement.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        
+        // Get first day of month and total days in month
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 for Sunday, 1 for Monday...
+        const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+        
+        // Add empty cells for days before the 1st of the month
+        for (let i = 0; i < firstDay; i++) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day disabled';
+            calendar.appendChild(dayElement);
+        }
+        
+        // Add days of current month
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize today's date for comparison
+        
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+            dayElement.textContent = i;
+            
+            const dayToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
+            dayToCheck.setHours(0, 0, 0, 0); // Normalize current calendar day for comparison
+            const dayOfWeek = daysOfWeek[dayToCheck.getDay()];
+
+            // Disable past days or days when the shop is closed
+            if (dayToCheck < today || !openingHours[dayOfWeek]) {
+                dayElement.classList.add('disabled');
+            } else {
+                dayElement.addEventListener('click', function() {
+                    document.querySelectorAll('.calendar-day').forEach(day => {
+                        day.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), parseInt(this.textContent));
+                    updateTimeSlots();
+                });
+            }
+            
+            // Mark selected day (if any)
+            if (selectedDate && 
+                selectedDate.getFullYear() === currentDate.getFullYear() && 
+                selectedDate.getMonth() === currentDate.getMonth() && 
+                selectedDate.getDate() === i) {
+                dayElement.classList.add('selected');
+            }
+            
+            calendar.appendChild(dayElement);
+        }
+    }
+
+    // Previous month button
+    document.getElementById('prev-month').addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        // Prevent going back before current month
+        const today = new Date();
+        if (currentDate.getFullYear() < today.getFullYear() || 
+            (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() < today.getMonth())) {
+            currentDate = new Date(today.getFullYear(), today.getMonth(), 1); // Reset to current month
+        }
+        selectedDate = null; // Clear selected date when month changes
+        renderCalendar();
+        updateTimeSlots(); // Clear time slots
+    });
+
+    // Next month button
+    document.getElementById('next-month').addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        selectedDate = null; // Clear selected date when month changes
+        renderCalendar();
+        updateTimeSlots(); // Clear time slots
+    });
+
+    // Generate time slots
+    async function updateTimeSlots() {
+        const timeSlotsContainer = document.getElementById('time-slots');
+        timeSlotsContainer.innerHTML = '';
+        selectedTime = null; // Reset selected time
+
+        if (!selectedDate) {
+            timeSlotsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">Please select a date to see available times.</p>';
+            return;
+        }
+
+        const dayOfWeek = daysOfWeek[selectedDate.getDay()];
+        const barberName = document.getElementById('barber').value;
+
+        if (!openingHours[dayOfWeek]) {
+            timeSlotsContainer.innerHTML = `<p class="text-gray-500 col-span-full text-center">The shop is closed on ${dayOfWeek}s.</p>`;
+            return;
+        }
+
+        const today = new Date();
+        const isToday = selectedDate.getDate() === today.getDate() && 
+                        selectedDate.getMonth() === today.getMonth() && 
+                        selectedDate.getFullYear() === today.getFullYear();
+        
+        // Fetch existing bookings for the selected date and barber
+        const formattedDate = selectedDate.toLocaleDateString('en-GB'); 
+        const bookingsRef = window.collection(window.db, "bookings");
+        const q = window.query(bookingsRef, window.orderBy("createdAt", "desc")); // Fetch all to filter client-side for simplicity
+
+        let existingBookings = [];
+        try {
+            const snapshot = await window.getDocs(q);
+            existingBookings = snapshot.docs
+                .map(doc => doc.data())
+                .filter(booking => 
+                    booking.date === formattedDate && 
+                    (barberName === "" || booking.barber === barberName) // Filter by barber if selected
+                );
+        } catch (error) {
+            console.error("Error fetching bookings for time slots:", error);
+            timeSlotsContainer.innerHTML = '<p class="text-red-500 col-span-full text-center">Error loading time slots. Please try again.</p>';
+            return;
+        }
+
+        const startMinutes = openingHours[dayOfWeek].start;
+        const endMinutes = openingHours[dayOfWeek].end;
+        
+        let hasAvailableSlots = false;
+
+        for (let totalMinutes = startMinutes; totalMinutes <= endMinutes; totalMinutes += 30) {
+            const hour = Math.floor(totalMinutes / 60);
+            const minute = totalMinutes % 60;
+
+            const slotTime = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), hour, minute);
+            
+            // Disable past times for today
+            if (isToday && slotTime < new Date()) {
+                continue; // Skip time slots that are in the past relative to current time
+            }
+            
+            const timeString = `${hour > 12 ? hour - 12 : hour}:${minute === 0 ? '00' : '30'} ${hour >= 12 ? 'PM' : 'AM'}`;
+            const isBooked = existingBookings.some(booking => booking.time === timeString);
+
+            const timeSlot = document.createElement('button');
+            timeSlot.type = 'button'; // Prevent form submission
+            timeSlot.className = 'time-slot-btn'; // Use new class for styling
+            timeSlot.textContent = timeString;
+            timeSlot.disabled = isBooked; // Disable button if slot is booked
+            
+            if (!isBooked) {
+                timeSlot.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('#time-slots button').forEach(btn => {
+                        btn.classList.remove('selected-time'); // Remove custom selected class
+                    });
+                    this.classList.add('selected-time'); // Add custom selected class
+                    selectedTime = this.textContent; // Store the selected time string
+                });
+                hasAvailableSlots = true;
+            }
+            timeSlotsContainer.appendChild(timeSlot);
+        }
+        
+        if (!hasAvailableSlots) {
+            timeSlotsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">No available time slots for this day or selected barber.</p>';
+        }
+    }
+
+
+    // Booking Form Submission
+    document.getElementById('booking-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!selectedDate || !selectedTime) {
+            alert('Please select a date and time slot.');
+            return;
+        }
+
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const barber = document.getElementById('barber').value;
+        const service = document.getElementById('service').value;
+        const requests = document.getElementById('requests').value.trim();
+
+        if (!name || !email || !barber || !service) {
+            alert('Please fill in all required fields (Name, Email, Barber, Service).');
+            return;
+        }
+
+        // Basic email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+
+        // Prepare booking details
+        const bookingDetails = {
+            name: name,
+            email: email,
+            phone: phone,
+            barber: barber,
+            service: service,
+            requests: requests,
+            date: selectedDate.toLocaleDateString('en-GB'), // Store date as DD/MM/YYYY
+            time: selectedTime,
+            createdAt: new Date().toISOString() // ISO string for precise timestamp
+        };
+
+        // Display a loading indicator or disable button here if desired
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Booking...';
+
+try {
+    // 1. Add booking to Firestore
+    await window.addDoc(window.collection(window.db, "bookings"), bookingDetails);
+    console.log("Booking added to Firestore successfully!");
+
+    // 2. Send emails via EmailJS
+
+    // Initialize EmailJS with your Public Key
+    emailjs.init("EjSBARI3GV628ywBk"); // <<< Your EmailJS Public Key
+
+    // Define parameters for EmailJS, ensuring keys match your template variables
+    // These parameters will be used for both emails.
+    const emailTemplateParams = {
+        client_name: name,
+        client_email: email, // This will be used for the client's email 'To' field
+        phone_number: phone,
+        // Get text content of selected options for EmailJS
+        barber_name: document.getElementById('barber').options[document.getElementById('barber').selectedIndex].text,
+        service_name: document.getElementById('service').options[document.getElementById('service').selectedIndex].text,
+        appointment_date: bookingDetails.date,
+        appointment_time: bookingDetails.time,
+        special_requests: requests || "N/A" // Send N/A if no requests
+    };
+
+    const serviceID = "service_sirg0mk"; // <--- Your EmailJS Service ID
+    const ownerTemplateID = "template_nxiyk6p"; // <--- CORRECTED: Your Owner Notification Template ID
+    const clientTemplateID = "template_ghrh5en"; // <--- NEW Client Confirmation Template ID (ensure this matches your new EmailJS template)
+
+    // Send email to OWNER
+    await emailjs.send(serviceID, ownerTemplateID, emailTemplateParams);
+    console.log("Owner notification email sent successfully!");
+
+    // Send email to CLIENT
+    await emailjs.send(serviceID, clientTemplateID, emailTemplateParams);
+    console.log("Client confirmation email sent successfully!");
+
+
+    // Show confirmation modal
+    const confirmationDetails = document.getElementById('confirmation-details');
+    confirmationDetails.innerHTML = `
+        <p class="mb-1"><strong>Name:</strong> ${bookingDetails.name}</p>
+        <p class="mb-1"><strong>Service:</strong> ${document.getElementById('service').options[document.getElementById('service').selectedIndex].text}</p>
+        <p class="mb-1"><strong>Barber:</strong> ${document.getElementById('barber').options[document.getElementById('barber').selectedIndex].text}</p>
+        <p class="mb-1"><strong>Date:</strong> ${bookingDetails.date}</p>
+        <p class="mb-1"><strong>Time:</strong> ${bookingDetails.time}</p>
+    `;
+    document.getElementById('confirmation-modal').classList.remove('hidden');
+
+    // Reset form and calendar state
+    this.reset();
+    selectedDate = null;
+    selectedTime = null;
+    renderCalendar(); // Re-render to clear selected date
+    updateTimeSlots(); // Clear and show initial message for time slots
+
+} catch (error) {
+    console.error("Error submitting booking:", error);
+    let errorMessage = "Failed to submit booking. Please try again later.";
+    if (error && error.message) {
+        errorMessage += " Error: " + error.message;
+    } else if (error && error.text) { // EmailJS often puts detailed error in error.text
+        errorMessage += " EmailJS Error: " + error.text;
+    }
+    alert(errorMessage);
+} finally {
+    submitButton.disabled = false;
+    submitButton.textContent = 'Book Appointment';
+}
+    });
+
+    // Close modal
+    document.getElementById('close-modal').addEventListener('click', function() {
+        document.getElementById('confirmation-modal').classList.add('hidden');
+    });
+
+    // Event listener for barber selection to refresh time slots
+    document.getElementById('barber').addEventListener('change', updateTimeSlots);
+
+    // Initialize calendar and time slots on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCalendar();
+        updateTimeSlots(); // Initialize with "Please select a date" message
+    });
+</script>
+
+</body>
+</html>

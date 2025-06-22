@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Bookings - The Merchant Barber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS for table */
+        .booking-table th, .booking-table td {
+            padding: 0.75rem; /* Tailwind's p-3 */
+            border-bottom: 1px solid #e2e8f0; /* Tailwind's border-b border-gray-200 */
+        }
+        .booking-table th {
+            text-align: left;
+            font-weight: bold;
+            background-color: #f8f8f8; /* A light background for headers */
+        }
+
+        /* Modal styles */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Blur effect for background */
+        #main-content.blur-active {
+            filter: blur(5px);
+            pointer-events: none; /* Prevent interaction with blurred content */
+            user-select: none; /* Prevent selection of blurred content */
+        }
+
+        /* Ensure password modal is always on top and not blurred itself */
+        #password-modal {
+            z-index: 9999; /* Higher than any other element */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+    <div id="password-modal" class="fixed inset-0 modal flex items-center justify-center z-[9999]">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-sm modal-content">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 text-center">Enter Access Code</h3>
+            <form id="password-form" class="space-y-4">
+                <div>
+                    <label for="access-code" class="block text-gray-700 text-sm font-bold mb-2">Access Code:</label>
+                    <input type="password" id="access-code" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    <p id="password-error" class="text-red-500 text-xs italic mt-2 hidden">Incorrect code. Please try again.</p>
+                </div>
+                <div class="flex justify-center mt-6">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="main-content" class="container mx-auto p-4 transition-filter duration-300">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">All Bookings</h1>
+
+        <nav class="mb-6 flex justify-between items-center">
+            <a href="index.html" class="text-blue-600 hover:text-blue-800 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Back to Booking Form
+            </a>
+            <button id="add-booking-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Add New Booking
+            </button>
+        </nav>
+
+        <div id="next-appointment-box" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-8 hidden rounded-lg shadow-sm" role="alert">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-bold text-lg mb-2">Next Appointment!</p>
+                    <p id="next-barber" class="text-xl font-semibold"></p>
+                    <p id="next-client" class="text-base"></p>
+                    <p id="next-service" class="text-base"></p>
+                    <p id="next-datetime" class="text-base"></p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <p class="font-bold text-lg">Countdown:</p>
+                    <p id="countdown" class="text-2xl font-bold"></p>
+                </div>
+            </div>
+            <p id="no-upcoming-appointments" class="hidden text-center text-sm mt-4 text-green-600">No upcoming appointments found. Check the full list below.</p>
+        </div>
+
+
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <div class="p-4 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700">Booking List</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="bookings-table" class="min-w-full booking-table divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barber</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requests</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookings-tbody" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="9" class="px-6 py-4 text-center text-gray-500">Loading bookings...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-bookings-message" class="hidden p-4 text-center text-gray-500">
+                No bookings found.
+            </div>
+        </div>
+    </div>
+
+    <div id="add-booking-modal" class="fixed inset-0 hidden modal flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md modal-content">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Add New Booking</h3>
+            <form id="add-booking-form" class="space-y-4">
+                <div>
+                    <label for="modal-name" class="block text-gray-700 text-sm font-bold mb-2">Client Name:</label>
+                    <input type="text" id="modal-name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                </div>
+                <div>
+                    <label for="modal-phone" class="block text-gray-700 text-sm font-bold mb-2">Phone:</label>
+                    <input type="tel" id="modal-phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div>
+                    <label for="modal-email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                    <input type="email" id="modal-email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div>
+                    <label for="modal-barber" class="block text-gray-700 text-sm font-bold mb-2">Barber:</label>
+                    <select id="modal-barber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                        <option value="">Select Barber</option>
+                        <option value="Tony">Tony</option>
+                        <option value="John">John</option>
+                        <option value="Sarah">Sarah</option>
+                        <option value="Mike">Mike</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="modal-service" class="block text-gray-700 text-sm font-bold mb-2">Service:</label>
+                    <select id="modal-service" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                        <option value="">Select Service</option>
+                        <option value="Classic Haircut">Classic Haircut</option>
+                        <option value="Beard Trim">Beard Trim</option>
+                        <option value="Royal Treatment">Royal Treatment</option>
+                        <option value="Kids Cut (under 12 yrs)">Kids Cut (under 12 yrs)</option>
+                        <option value="Hot Towel Shave">Hot Towel Shave</option>
+                        <option value="Executive Package">Executive Package</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="modal-date" class="block text-gray-700 text-sm font-bold mb-2">Date:</label>
+                    <input type="date" id="modal-date" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                </div>
+                <div>
+                    <label for="modal-time" class="block text-gray-700 text-sm font-bold mb-2">Time:</label>
+                    <input type="time" id="modal-time" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                </div>
+                <div>
+                    <label for="modal-requests" class="block text-gray-700 text-sm font-bold mb-2">Special Requests:</label>
+                    <textarea id="modal-requests" rows="2" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" id="cancel-add-booking" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Add Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, orderBy, query, where, deleteDoc, doc, addDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4NZz0oYsinOBZEdkA7VnhQSK6WUYlZ2M",
+            authDomain: "testportal-390ae.firebaseapp.com",
+            projectId: "testportal-390ae",
+            storageBucket: "testportal-390ae.firebasestorage.app",
+            messagingSenderId: "89461724442",
+            appId: "1:89461724442:web:0d0aa807b5ef52c64608a3",
+            measurementId: "G-C0GDD7V6Z9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Expose Firebase functions globally for easier access (optional, but consistent with original code)
+        window.db = db;
+        window.collection = collection;
+        window.getDocs = getDocs;
+        window.orderBy = orderBy;
+        window.query = query;
+        window.where = where;
+        window.deleteDoc = deleteDoc;
+        window.doc = doc;
+        window.addDoc = addDoc;
+        window.onSnapshot = onSnapshot;
+        window.getDoc = getDoc; // Added getDoc for fetching single document
+
+        let countdownInterval;
+        let unsubscribeFromBookings;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordModal = document.getElementById('password-modal');
+            const passwordForm = document.getElementById('password-form');
+            const accessCodeInput = document.getElementById('access-code');
+            const passwordError = document.getElementById('password-error');
+            const mainContent = document.getElementById('main-content');
+
+            // Show password modal and blur main content immediately
+            passwordModal.classList.remove('hidden');
+            mainContent.classList.add('blur-active'); // Apply blur to main content specifically
+
+            passwordForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const enteredPassword = accessCodeInput.value;
+
+                try {
+                    // --- THIS IS THE CODE THAT GETS THE PASSWORD FROM THE DATABASE ---
+                    const docRef = doc(db, "settings", "admin"); // Assuming 'settings' collection and 'admin' document
+                    const docSnap = await getDoc(docRef); // Fetches the document
+
+                    if (docSnap.exists() && docSnap.data().password === enteredPassword) {
+                        // Password matches
+                        passwordModal.classList.add('hidden');
+                        mainContent.classList.remove('blur-active'); // Remove blur from main content
+                        loadBookingsRealtime(); // Load content after successful authentication
+                    } else {
+                        // Password does not match
+                        passwordError.classList.remove('hidden');
+                        accessCodeInput.value = ''; // Clear input on error
+                        accessCodeInput.focus();
+                    }
+                } catch (error) {
+                    console.error("Error fetching password from Firestore:", error);
+                    passwordError.textContent = "Error verifying code. Please try again.";
+                    passwordError.classList.remove('hidden');
+                }
+            });
+
+
+            document.getElementById('add-booking-btn').addEventListener('click', () => {
+                document.getElementById('add-booking-modal').classList.remove('hidden');
+                document.getElementById('modal-name').focus();
+            });
+
+            document.getElementById('cancel-add-booking').addEventListener('click', () => {
+                document.getElementById('add-booking-modal').classList.add('hidden');
+                document.getElementById('add-booking-form').reset();
+            });
+
+            document.getElementById('add-booking-form').addEventListener('submit', addBookingManually);
+
+            // loadBookingsRealtime() is now called only after successful password entry
+        });
+
+        async function loadBookingsRealtime() {
+            const bookingsTbody = document.getElementById('bookings-tbody');
+            const noBookingsMessage = document.getElementById('no-bookings-message');
+            const nextAppointmentBox = document.getElementById('next-appointment-box');
+            const noUpcomingAppointmentsMsg = document.getElementById('no-upcoming-appointments');
+
+            bookingsTbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Loading bookings...</td></tr>';
+            noBookingsMessage.classList.add('hidden');
+            nextAppointmentBox.classList.add('hidden');
+            noUpcomingAppointmentsMsg.classList.add('hidden');
+
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            if (unsubscribeFromBookings) {
+                unsubscribeFromBookings();
+            }
+
+            try {
+                const bookingsRef = window.collection(window.db, "bookings");
+                // Order by 'date' and then 'time' to ensure chronological display and correct next appointment finding
+                // This query requires a composite index on 'date' (asc) and 'time' (asc) in Firestore.
+                const q = window.query(bookingsRef, window.orderBy("date", "asc"), window.orderBy("time", "asc"));
+
+                unsubscribeFromBookings = window.onSnapshot(q, (querySnapshot) => {
+                    let allBookings = [];
+                    querySnapshot.forEach((doc) => {
+                        allBookings.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    // --- NEW LOGIC: Filter out past bookings and prepare for display/countdown ---
+                    const now = new Date();
+                    const upcomingBookings = [];
+
+                    for (const booking of allBookings) {
+                        // Assuming booking.date is 'DD/MM/YYYY' and booking.time is 'HH:MM AM/PM'
+                        const [day, month, year] = booking.date.split('/').map(Number);
+                        const [timePart, ampm] = booking.time.split(' ');
+                        let [hours, minutes] = timePart.split(':').map(Number);
+
+                        if (ampm === 'PM' && hours < 12) {
+                            hours += 12;
+                        }
+                        if (ampm === 'AM' && hours === 12) {
+                            hours = 0;
+                        }
+
+                        // Create a Date object for the booking
+                        const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
+
+                        // If the appointment is in the future or currently happening (within the last few minutes, adjustable)
+                        if (appointmentDateTime.getTime() >= now.getTime() - (5 * 60 * 1000)) { // Keep appointments from 5 mins ago onwards
+                            upcomingBookings.push({ ...booking, dateTime: appointmentDateTime });
+                        }
+                    }
+
+                    // Sort upcoming bookings to find the next one and for display
+                    upcomingBookings.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+                    // --- END NEW LOGIC ---
+
+                    bookingsTbody.innerHTML = '';
+
+                    if (upcomingBookings.length === 0) {
+                        noBookingsMessage.classList.remove('hidden');
+                        nextAppointmentBox.classList.remove('hidden');
+                        noUpcomingAppointmentsMsg.classList.remove('hidden');
+                        document.getElementById('next-barber').textContent = '';
+                        document.getElementById('next-client').textContent = '';
+                        document.getElementById('next-service').textContent = '';
+                        document.getElementById('next-datetime').textContent = '';
+                        document.getElementById('countdown').textContent = '';
+                        if (countdownInterval) clearInterval(countdownInterval);
+                    } else {
+                        noBookingsMessage.classList.add('hidden');
+                        noUpcomingAppointmentsMsg.classList.add('hidden');
+
+                        // Find the next appointment for the countdown
+                        const nextAppointment = upcomingBookings[0]; // Already sorted, so the first is the next
+
+                        if (nextAppointment) {
+                            nextAppointmentBox.classList.remove('hidden');
+                            document.getElementById('next-barber').textContent = `Barber: ${nextAppointment.barber || 'N/A'}`;
+                            document.getElementById('next-client').textContent = `Client: ${nextAppointment.name || 'N/A'}`;
+                            document.getElementById('next-service').textContent = `Service: ${nextAppointment.service || 'N/A'}`;
+                            document.getElementById('next-datetime').textContent = `Date: ${nextAppointment.date || 'N/A'} at ${nextAppointment.time || 'N/A'}`;
+
+                            if (countdownInterval) {
+                                clearInterval(countdownInterval);
+                            }
+
+                            const countdownElement = document.getElementById('countdown');
+                            function updateCountdown() {
+                                const nowForCountdown = new Date();
+                                const timeRemaining = nextAppointment.dateTime.getTime() - nowForCountdown.getTime();
+
+                                if (timeRemaining <= 0) {
+                                    countdownElement.textContent = "NOW!";
+                                    clearInterval(countdownInterval);
+                                    // Reload bookings to update the "next appointment" if the current one has just passed
+                                    setTimeout(loadBookingsRealtime, 5000); // Reload after 5 seconds
+                                    return;
+                                }
+
+                                const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+                                const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                                const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+                                countdownElement.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+                            }
+
+                            updateCountdown();
+                            countdownInterval = setInterval(updateCountdown, 1000);
+
+                        } else {
+                            // This block might be redundant if upcomingBookings.length === 0 handles it, but good for clarity
+                            nextAppointmentBox.classList.remove('hidden');
+                            noUpcomingAppointmentsMsg.classList.remove('hidden');
+                            document.getElementById('next-barber').textContent = '';
+                            document.getElementById('next-client').textContent = '';
+                            document.getElementById('next-service').textContent = '';
+                            document.getElementById('next-datetime').textContent = '';
+                            document.getElementById('countdown').textContent = '';
+                            if (countdownInterval) clearInterval(countdownInterval);
+                        }
+
+                        // Populate the table with only upcoming bookings
+                        upcomingBookings.forEach((booking) => {
+                            const row = document.createElement('tr');
+                            row.className = 'hover:bg-gray-50';
+
+                            row.innerHTML = `
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.date || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.time || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${booking.name || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.phone || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.email || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.barber || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.service || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.requests || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button data-id="${booking.id}" class="delete-btn text-red-600 hover:text-red-900 transition duration-150 ease-in-out">Delete</button>
+                                </td>
+                                `;
+                            bookingsTbody.appendChild(row);
+                        });
+
+                        document.querySelectorAll('.delete-btn').forEach(button => {
+                            button.addEventListener('click', (event) => {
+                                const bookingId = event.target.dataset.id;
+                                if (confirm('Are you sure you want to delete this booking?')) {
+                                    deleteBooking(bookingId);
+                                }
+                            });
+                        });
+                    }
+
+                }, (error) => {
+                    console.error("Error listening to bookings:", error);
+                    bookingsTbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-red-500">Failed to load bookings. Please try again.</td></tr>';
+                });
+
+            } catch (error) {
+                console.error("Initial error setting up bookings listener:", error);
+                bookingsTbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-red-500">Failed to initialize booking display.</td></tr>';
+            }
+        }
+
+        async function addBookingManually(event) {
+            event.preventDefault();
+
+            const modalName = document.getElementById('modal-name').value.trim();
+            const modalPhone = document.getElementById('modal-phone').value.trim();
+            const modalEmail = document.getElementById('modal-email').value.trim();
+            const modalBarber = document.getElementById('modal-barber').value;
+            const modalService = document.getElementById('modal-service').value;
+            const modalDate = document.getElementById('modal-date').value; // YYYY-MM-DD
+            const modalTime = document.getElementById('modal-time').value; // HH:MM (24-hour)
+            const modalRequests = document.getElementById('modal-requests').value.trim();
+
+            if (!modalName || !modalBarber || !modalService || !modalDate || !modalTime) {
+                alert('Please fill in all required fields (Name, Barber, Service, Date, Time).');
+                return;
+            }
+
+            // Format date for display as DD/MM/YYYY
+            const dateParts = modalDate.split('-'); // ["YYYY", "MM", "DD"]
+            const formattedDateDisplay = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+            // Format time for display as HH:MM AM/PM
+            const [hours, minutes] = modalTime.split(':').map(Number);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+            const formattedMinutes = minutes.toString().padStart(2, '0'); // Ensures 0 padding for minutes
+            const formattedTimeDisplay = `${displayHours}:${formattedMinutes} ${ampm}`;
+
+
+            const newBookingDetails = {
+                name: modalName,
+                phone: modalPhone || 'N/A',
+                email: modalEmail || 'N/A',
+                barber: modalBarber,
+                service: modalService,
+                date: formattedDateDisplay, // Store as DD/MM/YYYY for display and consistent comparison with existing data
+                time: formattedTimeDisplay, // Store as HH:MM AM/PM for display
+                requests: modalRequests || 'N/A',
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                await window.addDoc(window.collection(window.db, "bookings"), newBookingDetails);
+                alert('Booking added successfully!');
+                document.getElementById('add-booking-modal').classList.add('hidden');
+                document.getElementById('add-booking-form').reset();
+            } catch (error) {
+                console.error("Error adding new booking:", error);
+                alert('Failed to add booking. Please try again.');
+            }
+        }
+
+        async function deleteBooking(id) {
+            try {
+                await window.deleteDoc(window.doc(window.db, "bookings", id));
+                alert('Booking deleted successfully!');
+            } catch (error) {
+                console.error("Error deleting booking:", error);
+                alert('Failed to delete booking. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>
