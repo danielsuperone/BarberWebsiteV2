@@ -4,7 +4,6 @@ A modern and responsive Barber Booking Web App built to simplify customer appoin
 ---
 
 ## 📜 Table of Contents  
-Click to expand  
 - 🔥 Features  
   - 1. Smart Booking System 📅
   - 2. Admin Dashboard 🔐
