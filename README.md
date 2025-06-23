@@ -1,1 +1,1 @@
-(link)[https://danielsuperone.github.io/BarberWebsiteV2/]
+[link](https://danielsuperone.github.io/BarberWebsiteV2/)
