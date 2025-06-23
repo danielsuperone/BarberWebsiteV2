@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>The Merchant Barber</title> 
     <link rel="icon" type="image/png" href="https://i.imgur.com/KgYjZvD.png" />
 
@@ -23,13 +23,23 @@
             padding: 8px;
         }
         .calendar-day {
-            padding: 10px;
+            padding: 6px;
             text-align: center;
             cursor: pointer;
             border-radius: 4px;
             transition: all 0.3s ease;
             background-color: #fff; /* White background for days */
             border: 1px solid #e5e7eb; /* Light border */
+            font-size: 0.9rem;
+        }
+        @media (max-width: 640px) {
+            .calendar {
+                gap: 4px;
+            }
+            .calendar-header {
+                padding: 4px;
+                font-size: 0.8rem;
+            }
         }
         .calendar-day:hover:not(.selected):not(.disabled) {
             background-color: #f3f4f6; /* Light gray on hover */
@@ -74,11 +84,11 @@
             background-color: #ffffff;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem; /* rounded-md */
-            padding-top: 0.5rem; /* py-2 */
-            padding-bottom: 0.5rem; /* py-2 */
-            padding-left: 0.75rem; /* px-3 */
-            padding-right: 0.75rem; /* px-3 */
-            font-size: 0.875rem; /* text-sm */
+            padding-top: 0.25rem; /* py-1 */
+            padding-bottom: 0.25rem; /* py-1 */
+            padding-left: 0.5rem; /* px-2 */
+            padding-right: 0.5rem; /* px-2 */
+            font-size: 0.75rem; /* text-xs */
             line-height: 1.25rem;
             transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -107,7 +117,7 @@
     </style>
 </head>
 
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 font-sans" style="touch-action: pan-y; overflow-x: hidden;">
 
 <nav class="bg-black text-white shadow-lg">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
