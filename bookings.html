@@ -107,8 +107,6 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barber</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requests</th>
@@ -129,20 +127,12 @@
     </div>
 
     <div id="add-booking-modal" class="fixed inset-0 hidden modal flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md modal-content">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto modal-content">
             <h3 class="text-2xl font-bold mb-4 text-gray-800">Add New Booking</h3>
-            <form id="add-booking-form" class="space-y-4">
+            <form id="add-booking-form" class="space-y-4 min-w-[280px]">
                 <div>
                     <label for="modal-name" class="block text-gray-700 text-sm font-bold mb-2">Client Name:</label>
                     <input type="text" id="modal-name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-                </div>
-                <div>
-                    <label for="modal-phone" class="block text-gray-700 text-sm font-bold mb-2">Phone:</label>
-                    <input type="tel" id="modal-phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-                <div>
-                    <label for="modal-email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
-                    <input type="email" id="modal-email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                 </div>
                 <div>
                     <label for="modal-barber" class="block text-gray-700 text-sm font-bold mb-2">Barber:</label>
@@ -178,7 +168,7 @@
                     <label for="modal-requests" class="block text-gray-700 text-sm font-bold mb-2">Special Requests:</label>
                     <textarea id="modal-requests" rows="2" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
                 </div>
-                <div class="flex justify-end space-x-4 mt-6">
+                <div class="flex justify-end space-x-4 mt-6 sticky bottom-0 bg-white py-4">
                     <button type="button" id="cancel-add-booking" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300">Cancel</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Add Booking</button>
                 </div>
@@ -409,8 +399,6 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.date || 'N/A'}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.time || 'N/A'}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${booking.name || 'N/A'}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.phone || 'N/A'}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.email || 'N/A'}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.barber || 'N/A'}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.service || 'N/A'}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${booking.requests || 'N/A'}</td>
@@ -446,8 +434,8 @@
             event.preventDefault();
 
             const modalName = document.getElementById('modal-name').value.trim();
-            const modalPhone = document.getElementById('modal-phone').value.trim();
-            const modalEmail = document.getElementById('modal-email').value.trim();
+            const modalPhone = 'N/A';
+            const modalEmail = 'N/A';
             const modalBarber = document.getElementById('modal-barber').value;
             const modalService = document.getElementById('modal-service').value;
             const modalDate = document.getElementById('modal-date').value; // YYYY-MM-DD
